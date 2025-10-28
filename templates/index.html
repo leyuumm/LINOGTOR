@@ -177,6 +177,16 @@
 </head>
 <body class="bg-animated">
     
+    <!-- Loading Screen (for Railway cold starts) -->
+    <div id="loadingScreen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+        <div style="text-align: center; padding: 20px;">
+            <div style="width: 80px; height: 80px; border: 8px solid rgba(255,255,255,0.1); border-top: 8px solid white; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 30px;"></div>
+            <h2 style="color: white; font-size: 28px; font-weight: bold; margin-bottom: 10px;">🌍 LINOGTOR</h2>
+            <p style="color: #ccc; font-size: 16px; margin-bottom: 5px;">Loading Earthquake Detector...</p>
+            <p style="color: #888; font-size: 14px;">Please wait, this may take 30-60 seconds on first load</p>
+        </div>
+    </div>
+    
     <!-- Alert Notifications Container -->
     <div id="alertContainer" class="fixed top-4 right-4 z-50 space-y-4"></div>
     
@@ -1107,6 +1117,18 @@
         if ('Notification' in window && Notification.permission === 'default') {
             Notification.requestPermission();
         }
+
+        // Hide loading screen after page loads
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                const loadingScreen = document.getElementById('loadingScreen');
+                if (loadingScreen) {
+                    loadingScreen.style.opacity = '0';
+                    loadingScreen.style.transition = 'opacity 0.5s';
+                    setTimeout(() => loadingScreen.remove(), 500);
+                }
+            }, 500);
+        });
 
         // Initial load
         updateEarthquakes();
