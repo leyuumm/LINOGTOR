@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<!--
+    Real-Time Earthquake Detector - Bogo City, Cebu, Philippines
+    Copyright © 2025 Lliam Khenzo P. Monleon. All Rights Reserved.
+    
+    This software and associated documentation files are the proprietary
+    property of Lliam Khenzo P. Monleon. Unauthorized copying, distribution,
+    modification, or use of this software is strictly prohibited.
+-->
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="author" content="Lliam Khenzo P. Monleon">
+    <meta name="copyright" content="Copyright © 2025 Lliam Khenzo P. Monleon. All Rights Reserved.">
+    <title>LINOGTOR - Bogo City, Cebu, Philippines</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        body {
+            background: #000000;
+            color: #ffffff;
+            min-height: 100vh;
+        }
+        
+        .bg-animated {
+            background: linear-gradient(-45deg, #000000, #1a1a1a, #0a0a0a, #000000);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+        }
+        
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .glass-white {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        
+        #map {
+            height: 600px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: #1a1a1a;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .animate-fadeInUp {
+            animation: fadeInUp 0.6s ease-out forwards;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+        }
+        
+        .animate-pulse-custom {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+        
+        .glow-hover:hover {
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+            transition: all 0.3s ease;
+        }
+        
+        @keyframes slideInFromRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .alert-notification {
+            animation: slideInFromRight 0.5s ease-out;
+        }
+        
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #1a1a1a;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+        }
+        
+        .status-online {
+            background: #22c55e;
+            box-shadow: 0 0 8px #22c55e;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-offline {
+            background: #ef4444;
+        }
+        
+        /* Earthquake epicenter pulse animation */
+        @keyframes earthquakePulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+            }
+            50% {
+                box-shadow: 0 0 0 15px rgba(239, 68, 68, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+            }
+        }
+        
+        .earthquake-pulse {
+            animation: earthquakePulse 2s infinite;
+        }
+        
+        /* Leaflet marker custom styles for epicenters */
+        .leaflet-marker-icon.earthquake-epicenter {
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body class="bg-animated">
+    
+    <!-- Alert Notifications Container -->
+    <div id="alertContainer" class="fixed top-4 right-4 z-50 space-y-4"></div>
+    
+    <!-- Main Container -->
+    <div class="max-w-7xl mx-auto px-4 py-8 space-y-6">
+        
+        <!-- Header -->
+        <div class="glass rounded-2xl p-8 text-center animate-fadeInUp glow-hover">
+            <div class="mb-6">
+                <h1 class="text-5xl md:text-6xl font-black mb-3 bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
+                     LINOGERNS MONITORERNS
+                </h1>
+                <h2 class="text-2xl md:text-3xl font-bold text-gray-300">Bogo City, Cebu, Philippines</h2>
+                <p class="text-gray-400 mt-2">Real-time earthquake detection and monitoring system</p>
+            </div>
+            
+            <!-- Data Sources -->
+            <div class="flex justify-center items-center gap-6 mb-6 flex-wrap">
+                <div class="flex items-center gap-2">
+                    <span class="status-dot" id="usgsStatusDot"></span>
+                    <span class="text-sm font-medium">USGS</span>
+                    <span id="usgsStatus" class="text-xs text-gray-400">●</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="status-dot" id="phivolcsStatusDot"></span>
+                    <span class="text-sm font-medium">PHIVOLCS</span>
+                    <span id="phivolcsStatus" class="text-xs text-gray-400">●</span>
+                </div>
+            </div>
+            
+            <!-- Alert Controls -->
+            <div class="flex justify-center gap-4 mb-6 flex-wrap">
+                <button id="alertToggle" onclick="toggleAlerts()" class="px-6 py-3 bg-white text-black rounded-xl font-bold hover:bg-gray-200 transition-all duration-300 transform hover:scale-105">
+                    🔔 Earthquake Alerts: <span id="alertStatus">ENABLED</span>
+                </button>
+                <button id="newsAlertToggle" onclick="toggleNewsAlerts()" class="px-6 py-3 bg-green-600 text-white rounded-xl font-bold hover:bg-green-500 transition-all duration-300 transform hover:scale-105">
+                    📰 News Alerts: <span id="newsAlertStatus">ENABLED</span>
+                </button>
+                <button onclick="testAlert()" class="px-6 py-3 bg-gray-800 text-white rounded-xl font-bold hover:bg-gray-700 transition-all duration-300 transform hover:scale-105">
+                    🔊 Test Alert
+                </button>
+            </div>
+            
+            <!-- Settings -->
+            <div class="text-sm text-gray-300 space-y-2">
+                <div class="flex justify-center items-center gap-2 flex-wrap">
+                    <span>Alert when: Magnitude ≥</span>
+                    <select id="minMagnitude" onchange="updateMinMagnitude()" class="bg-gray-800 text-white px-3 py-1 rounded-lg border border-gray-700 focus:outline-none focus:ring-2 focus:ring-white">
+                        <option value="2.0" selected>2.0</option>
+                        <option value="3.0">3.0</option>
+                        <option value="4.0">4.0</option>
+                        <option value="5.0">5.0</option>
+                    </select>
+                    <span>| Distance ≤</span>
+                    <select id="maxDistance" onchange="updateMaxDistance()" class="bg-gray-800 text-white px-3 py-1 rounded-lg border border-gray-700 focus:outline-none focus:ring-2 focus:ring-white">
+                        <option value="50">50 km</option>
+                        <option value="100" selected>100 km</option>
+                        <option value="200">200 km</option>
+                        <option value="500">500 km</option>
+                        <option value="99999">Any distance</option>
+                    </select>
+                    <span>from Bogo City</span>
+                </div>
+                <div class="text-xs text-gray-500">
+                    🔄 Auto-refresh: <strong>1 second</strong> | Last updated: <span id="lastUpdate">Loading...</span>
+                </div>
+            </div>
+            
+            <!-- Copyright -->
+            <div class="mt-6 text-xs text-gray-500">
+                © 2025 Lliam Khenzo P. Monleon. All Rights Reserved.
+            </div>
+        </div>
+        
+        <!-- Statistics Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-fadeInUp" style="animation-delay: 0.1s;">
+            <div class="glass rounded-xl p-6 text-center glow-hover transition-all duration-300">
+                <div class="text-4xl font-black mb-2" id="totalPhilippines">-</div>
+                <div class="text-sm text-gray-400 uppercase tracking-wide">Total in Philippines (7d)</div>
+            </div>
+            <div class="glass rounded-xl p-6 text-center glow-hover transition-all duration-300">
+                <div class="text-4xl font-black mb-2" id="inCebu">-</div>
+                <div class="text-sm text-gray-400 uppercase tracking-wide">In Cebu Province</div>
+            </div>
+            <div class="glass rounded-xl p-6 text-center glow-hover transition-all duration-300">
+                <div class="text-4xl font-black mb-2" id="nearBogo">-</div>
+                <div class="text-sm text-gray-400 uppercase tracking-wide">Within 50km of Bogo</div>
+            </div>
+            <div class="glass rounded-xl p-6 text-center glow-hover transition-all duration-300">
+                <div class="text-4xl font-black mb-2" id="last24h">-</div>
+                <div class="text-sm text-gray-400 uppercase tracking-wide">Last 24 Hours</div>
+            </div>
+        </div>
+        
+        <!-- Interactive Earthquake Map (USGS Data) -->
+        <div class="glass rounded-2xl p-6 animate-fadeInUp glow-hover" style="animation-delay: 0.2s;">
+            <h3 class="text-2xl font-bold mb-4 flex items-center gap-2">
+                <span>🌍</span>
+                <span>Interactive Earthquake Map</span>
+            </h3>
+            <div class="text-sm text-gray-400 mb-3">
+                🎯 Live USGS & PHIVOLCS data • Magnitude-based colors • Click markers for details • Centered on Bogo City
+            </div>
+            <div id="map" style="height: 600px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.1);"></div>
+            <div class="mt-3 text-xs text-gray-500 flex items-center justify-between">
+                <span>📊 Data: USGS + PHIVOLCS (Official Sources)</span>
+                <span>🔄 Updates every second</span>
+            </div>
+        </div>
+        
+        <!-- Earthquake Monitor: City of Bogo -->
+        <div class="glass rounded-2xl p-6 animate-fadeInUp" style="animation-delay: 0.35s;">
+            <h3 class="text-2xl font-bold mb-4 flex items-center gap-2">
+                <span>📡</span>
+                <span>Seismic Monitor: City of Bogo</span>
+            </h3>
+            <div class="space-y-3 max-h-96 overflow-y-auto pr-2" id="phivolcsNews">
+                <div class="text-center py-8">
+                    <div class="inline-block w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin mb-3"></div>
+                    <p class="text-gray-400 text-sm">Loading earthquake data for City of Bogo...</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Earthquake List -->
+        <div class="glass rounded-2xl p-6 animate-fadeInUp" style="animation-delay: 0.4s;">
+            <h3 class="text-2xl font-bold mb-4 flex items-center gap-2">
+                <span>📋</span>
+                <span>Recent Earthquakes (All Philippines)</span>
+            </h3>
+            <div id="earthquakeList" class="space-y-3">
+                <div class="text-center py-12">
+                    <div class="inline-block w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin mb-4"></div>
+                    <p class="text-gray-400">Loading earthquake data...</p>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+
+    <!-- Audio for alerts -->
+    <audio id="alarmSound" preload="auto">
+        <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTcIGWi77eefTRAMUKfj8LZjHAY4ktfyy3ksBSR3x/DdkEAKFF606+uoVRQKRp/g8r5sIQUrgc7y2Yk3CBlou+3nn00QDFCn4/C2YxwGOJLX8st5LAUkd8fw3ZBACxVftOvrqFUUCkaf4PK+bCEFK4HO8tmJNwgZaLvt559NEAxQp+PwtmMcBjiS1/LLeSwFJHfH8N2QQAsVX7Tr66hVFApGn+DyvmwhBSuBzvLZiTcIGWi77eefTRAMUKfj8LZjHAY4ktfyy3ksBSR3x/DdkEALFV+06+uoVRQKRp/g8r5sIQUrgc7y2Yk3CBlou+3nn00QDFCn4/C2YxwGOJLX8st5LAUkd8fw3ZBACxVftOvrqFUUCkaf4PK+bCEFK4HO8tmJNwgZaLvt559NEAxQp+PwtmMcBjiS1/LLeSwFJHfH8N2QQAsVX7Tr66hVFApGn+DyvmwhBSuBzvLZiTcIGWi77eefTRAMUKfj8LZjHAY4ktfyy3ksBSR3x/DdkEALFV+06+uoVRQKRp/g8r5sIQUrgc7y2Yk3CBlou+3nn00QDFCn4/C2YxwGOJLX8st5LAUkd8fw3ZBACxVftOvrqFUUCkaf4PK+bCEFK4HO8tmJNwgZaLvt559NEAxQp+PwtmMcBjiS1/LLeSwFJHfH8N2QQAsVX7Tr66hVFApGn+DyvmwhBSuBzvLZiTcIGWi77eefTRAMUKfj8LZjHAY4ktfyy3ksBSR3x/DdkEALFV+06+uoVRQK" type="audio/wav">
+    </audio>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Initialize map centered on Bogo City with dark theme
+        const map = L.map('map').setView([11.0333, 124.0167], 9);
+        
+        // Dark map tiles from CARTO
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '© OpenStreetMap contributors © CARTO',
+            maxZoom: 19
+        }).addTo(map);
+
+        // Add Bogo City marker
+        const bogoMarker = L.marker([11.0333, 124.0167], {
+            icon: L.divIcon({
+                className: 'bogo-marker',
+                html: '<div style="background-color: white; width: 16px; height: 16px; border-radius: 50%; border: 3px solid #000; box-shadow: 0 0 10px rgba(255,255,255,0.8);"></div>',
+                iconSize: [16, 16]
+            })
+        }).addTo(map);
+        bogoMarker.bindPopup('<div style="color: #000; font-weight: bold;">📍 Bogo City, Cebu<br>Monitoring Center</div>');
+
+        // Add 50km radius circle
+        L.circle([11.0333, 124.0167], {
+            color: '#ffffff',
+            fillColor: '#ffffff',
+            fillOpacity: 0.1,
+            radius: 50000,
+            weight: 1,
+            dashArray: '5, 5'
+        }).addTo(map).bindPopup('50km radius from Bogo City');
+
+        // Map legend
+        const legend = L.control({position: 'bottomright'});
+        legend.onAdd = function (map) {
+            const div = L.DomUtil.create('div', 'info legend');
+            div.style.cssText = 'background: rgba(0,0,0,0.9); padding: 15px; border-radius: 12px; color: white; font-size: 12px; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2);';
+            div.innerHTML = `
+                <div style="font-weight: bold; margin-bottom: 10px; font-size: 14px;">🎯 Earthquake Magnitude</div>
+                <div style="display: flex; align-items: center; margin: 6px 0;">
+                    <div style="width: 24px; height: 24px; background: #7f1d1d; border-radius: 50%; border: 2px solid white; margin-right: 8px;"></div>
+                    <span>M 7.0+ (Catastrophic)</span>
+                </div>
+                <div style="display: flex; align-items: center; margin: 6px 0;">
+                    <div style="width: 22px; height: 22px; background: #dc2626; border-radius: 50%; border: 2px solid white; margin-right: 8px;"></div>
+                    <span>M 6.0-6.9 (Major)</span>
+                </div>
+                <div style="display: flex; align-items: center; margin: 6px 0;">
+                    <div style="width: 20px; height: 20px; background: #ef4444; border-radius: 50%; border: 2px solid white; margin-right: 8px;"></div>
+                    <span>M 5.0-5.9 (Strong)</span>
+                </div>
+                <div style="display: flex; align-items: center; margin: 6px 0;">
+                    <div style="width: 18px; height: 18px; background: #f97316; border-radius: 50%; border: 2px solid white; margin-right: 8px;"></div>
+                    <span>M 4.0-4.9 (Moderate)</span>
+                </div>
+                <div style="display: flex; align-items: center; margin: 6px 0;">
+                    <div style="width: 16px; height: 16px; background: #eab308; border-radius: 50%; border: 2px solid white; margin-right: 8px;"></div>
+                    <span>M 3.0-3.9 (Minor)</span>
+                </div>
+                <div style="display: flex; align-items: center; margin: 6px 0;">
+                    <div style="width: 14px; height: 14px; background: #3b82f6; border-radius: 50%; border: 2px solid white; margin-right: 8px;"></div>
+                    <span>M 2.0-2.9 (Light)</span>
+                </div>
+                <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.3); font-size: 11px; color: #d1d5db;">
+                    <div style="display: flex; align-items: center; margin: 4px 0;">
+                        <div style="width: 12px; height: 12px; background: #ef4444; border-radius: 50%; margin-right: 6px; animation: earthquakePulse 2s infinite;"></div>
+                        <span>Recent (last 24h)</span>
+                    </div>
+                    <div style="display: flex; align-items: center; margin: 4px 0;">
+                        <div style="width: 10px; height: 10px; background: white; border-radius: 50%; margin-right: 6px;"></div>
+                        <span>Bogo City Center</span>
+                    </div>
+                </div>
+            `;
+            return div;
+        };
+        legend.addTo(map);
+
+        let earthquakeMarkers = [];
+        let lastEarthquakes = new Set();
+        let alertsEnabled = true;
+        let minAlertMagnitude = 2.0;
+        let maxAlertDistance = 100;
+        let isFirstLoad = true;
+
+        // Create alarm sound using Web Audio API
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playAlarmSound() {
+            if (!alertsEnabled) return;
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(400, audioContext.currentTime + 0.5);
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 1);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 1);
+            
+            setTimeout(() => {
+                const oscillator2 = audioContext.createOscillator();
+                const gainNode2 = audioContext.createGain();
+                
+                oscillator2.connect(gainNode2);
+                gainNode2.connect(audioContext.destination);
+                
+                oscillator2.type = 'sine';
+                oscillator2.frequency.setValueAtTime(800, audioContext.currentTime);
+                oscillator2.frequency.exponentialRampToValueAtTime(400, audioContext.currentTime + 0.5);
+                
+                gainNode2.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 1);
+                
+                oscillator2.start(audioContext.currentTime);
+                oscillator2.stop(audioContext.currentTime + 1);
+            }, 1000);
+        }
+
+        function showAlert(earthquake) {
+            const alertContainer = document.getElementById('alertContainer');
+            
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'glass-white text-black rounded-xl p-6 shadow-2xl alert-notification max-w-md animate-pulse-custom';
+            alertDiv.innerHTML = `
+                <div class="flex justify-between items-start mb-3">
+                    <h4 class="text-xl font-black text-red-600">🚨 EARTHQUAKE ALERT!</h4>
+                    <button onclick="this.parentElement.parentElement.remove()" class="text-gray-500 hover:text-black text-2xl leading-none">&times;</button>
+                </div>
+                <div class="space-y-2 text-sm">
+                    <p><strong>Magnitude:</strong> ${earthquake.magnitude.toFixed(1)}</p>
+                    <p><strong>Location:</strong> ${earthquake.place}</p>
+                    <p><strong>Distance from Bogo:</strong> ${earthquake.distance_from_bogo_km} km</p>
+                    <p><strong>Time:</strong> ${earthquake.time}</p>
+                    <p><strong>Depth:</strong> ${earthquake.depth.toFixed(1)} km</p>
+                    ${earthquake.in_cebu ? '<p class="text-red-600 font-bold">⚠️ IN CEBU PROVINCE!</p>' : ''}
+                </div>
+            `;
+            
+            alertContainer.appendChild(alertDiv);
+            playAlarmSound();
+            
+            if ('Notification' in window && Notification.permission === 'granted') {
+                new Notification('🚨 Earthquake Alert!', {
+                    body: `Magnitude ${earthquake.magnitude.toFixed(1)} - ${earthquake.place}\n${earthquake.distance_from_bogo_km} km from Bogo City`,
+                    requireInteraction: true
+                });
+            }
+            
+            setTimeout(() => alertDiv.remove(), 30000);
+        }
+
+        function toggleAlerts() {
+            alertsEnabled = !alertsEnabled;
+            const btn = document.getElementById('alertToggle');
+            const status = document.getElementById('alertStatus');
+            
+            if (alertsEnabled) {
+                btn.classList.remove('bg-red-600');
+                btn.classList.add('bg-white');
+                btn.classList.remove('text-white');
+                btn.classList.add('text-black');
+                status.textContent = 'ENABLED';
+                if ('Notification' in window && Notification.permission === 'default') {
+                    Notification.requestPermission();
+                }
+            } else {
+                btn.classList.remove('bg-white');
+                btn.classList.add('bg-red-600');
+                btn.classList.remove('text-black');
+                btn.classList.add('text-white');
+                status.textContent = 'DISABLED';
+            }
+        }
+
+        function toggleNewsAlerts() {
+            newsAlertsEnabled = !newsAlertsEnabled;
+            const btn = document.getElementById('newsAlertToggle');
+            const status = document.getElementById('newsAlertStatus');
+            
+            if (newsAlertsEnabled) {
+                btn.classList.remove('bg-red-600');
+                btn.classList.add('bg-green-600');
+                status.textContent = 'ENABLED';
+                showAlert(
+                    '✅ PHIVOLCS News Alerts Enabled',
+                    'You will receive notifications for new PHIVOLCS news about Bogo City',
+                    'bg-gradient-to-r from-green-600 to-emerald-600'
+                );
+                if ('Notification' in window && Notification.permission === 'default') {
+                    Notification.requestPermission();
+                }
+            } else {
+                btn.classList.remove('bg-green-600');
+                btn.classList.add('bg-red-600');
+                status.textContent = 'DISABLED';
+                showAlert(
+                    '🔕 PHIVOLCS News Alerts Disabled',
+                    'News notifications are now turned off',
+                    'bg-gradient-to-r from-red-600 to-orange-600'
+                );
+            }
+        }
+
+        function testAlert() {
+            const testEarthquake = {
+                magnitude: 5.5,
+                place: 'TEST ALERT - Near Bogo City, Cebu',
+                distance_from_bogo_km: 15.5,
+                time: new Date().toISOString().replace('T', ' ').substring(0, 19) + ' UTC',
+                depth: 10.0,
+                in_cebu: true
+            };
+            showAlert(testEarthquake);
+        }
+
+        function updateMinMagnitude() {
+            minAlertMagnitude = parseFloat(document.getElementById('minMagnitude').value);
+        }
+
+        function updateMaxDistance() {
+            maxAlertDistance = parseFloat(document.getElementById('maxDistance').value);
+        }
+
+        function checkForNewEarthquakes(earthquakes) {
+            if (isFirstLoad) {
+                // On first load, store all current earthquakes with their full data
+                earthquakes.forEach(eq => {
+                    lastEarthquakes.add(eq.id);
+                    // Store earthquake data for verification
+                    if (!window.earthquakeData) window.earthquakeData = {};
+                    window.earthquakeData[eq.id] = {
+                        magnitude: eq.magnitude,
+                        timestamp: eq.timestamp,
+                        lat: eq.latitude,
+                        lon: eq.longitude,
+                        distance: eq.distance_from_bogo_km
+                    };
+                });
+                isFirstLoad = false;
+                console.log('Initial earthquake data loaded:', lastEarthquakes.size, 'earthquakes');
+                return;
+            }
+
+            // Check for new earthquakes with enhanced validation
+            const currentTime = Date.now();
+            const newEarthquakes = [];
+            
+            earthquakes.forEach(eq => {
+                // Check if this is genuinely a new earthquake
+                const isNewById = !lastEarthquakes.has(eq.id);
+                
+                // Additional validation: check if within last 30 minutes (real recent earthquake)
+                const earthquakeTime = new Date(eq.timestamp).getTime();
+                const minutesSinceQuake = (currentTime - earthquakeTime) / (1000 * 60);
+                const isVeryRecent = minutesSinceQuake <= 30;
+                
+                // Check if we haven't seen this exact location and magnitude recently
+                let isDuplicate = false;
+                if (window.earthquakeData) {
+                    for (let id in window.earthquakeData) {
+                        const stored = window.earthquakeData[id];
+                        // Check for duplicate: same magnitude within 0.1, same location within 5km, within 1 hour
+                        const magDiff = Math.abs(stored.magnitude - eq.magnitude);
+                        const timeDiff = Math.abs(stored.timestamp - eq.timestamp);
+                        const latDiff = Math.abs(stored.lat - eq.latitude);
+                        const lonDiff = Math.abs(stored.lon - eq.longitude);
+                        
+                        if (magDiff < 0.1 && latDiff < 0.05 && lonDiff < 0.05 && timeDiff < 3600000) {
+                            isDuplicate = true;
+                            break;
+                        }
+                    }
+                }
+                
+                if (isNewById && !isDuplicate) {
+                    // Store the new earthquake data
+                    if (!window.earthquakeData) window.earthquakeData = {};
+                    window.earthquakeData[eq.id] = {
+                        magnitude: eq.magnitude,
+                        timestamp: eq.timestamp,
+                        lat: eq.latitude,
+                        lon: eq.longitude,
+                        distance: eq.distance_from_bogo_km
+                    };
+                    
+                    // Check alert conditions with enhanced criteria
+                    const meetsAlertCriteria = 
+                        alertsEnabled && 
+                        eq.magnitude >= minAlertMagnitude && 
+                        eq.distance_from_bogo_km <= maxAlertDistance;
+                    
+                    // Only alert if very recent (within 30 min) OR if it's a significant earthquake
+                    const shouldAlert = meetsAlertCriteria && (isVeryRecent || eq.magnitude >= 4.0);
+                    
+                    if (shouldAlert) {
+                        console.log('🚨 NEW EARTHQUAKE DETECTED:', {
+                            id: eq.id,
+                            magnitude: eq.magnitude,
+                            location: eq.place,
+                            distance: eq.distance_from_bogo_km + 'km',
+                            minutesAgo: minutesSinceQuake.toFixed(1),
+                            time: eq.time
+                        });
+                        newEarthquakes.push(eq);
+                    }
+                    
+                    lastEarthquakes.add(eq.id);
+                }
+            });
+            
+            // Alert for new earthquakes (one by one with slight delay to avoid overwhelming)
+            if (newEarthquakes.length > 0) {
+                console.log(`⚠️ Triggering ${newEarthquakes.length} earthquake alert(s)`);
+                newEarthquakes.forEach((eq, index) => {
+                    setTimeout(() => {
+                        showAlert(eq);
+                    }, index * 500); // 500ms delay between each alert
+                });
+            }
+            
+            // Clean up old earthquake data (remove earthquakes older than 24 hours)
+            if (window.earthquakeData) {
+                const oneDayAgo = currentTime - (24 * 60 * 60 * 1000);
+                for (let id in window.earthquakeData) {
+                    if (window.earthquakeData[id].timestamp < oneDayAgo) {
+                        delete window.earthquakeData[id];
+                    }
+                }
+            }
+        }
+
+        function getMagnitudeColor(mag) {
+            // More accurate magnitude color scale based on seismic impact
+            if (mag >= 7.0) return '#7f1d1d'; // Very dark red - Catastrophic
+            if (mag >= 6.0) return '#dc2626'; // Dark red - Major
+            if (mag >= 5.0) return '#ef4444'; // Red - Strong
+            if (mag >= 4.0) return '#f97316'; // Orange - Moderate
+            if (mag >= 3.0) return '#eab308'; // Yellow - Minor
+            if (mag >= 2.0) return '#3b82f6'; // Blue - Light
+            return '#6b7280'; // Gray - Micro
+        }
+
+        function getMagnitudeBg(mag) {
+            // More accurate magnitude background colors
+            if (mag >= 7.0) return 'bg-red-950'; // Very dark red - Catastrophic
+            if (mag >= 6.0) return 'bg-red-600'; // Dark red - Major
+            if (mag >= 5.0) return 'bg-red-500'; // Red - Strong
+            if (mag >= 4.0) return 'bg-orange-500'; // Orange - Moderate
+            if (mag >= 3.0) return 'bg-yellow-500'; // Yellow - Minor
+            if (mag >= 2.0) return 'bg-blue-500'; // Blue - Light
+            return 'bg-gray-500'; // Gray - Micro
+        }
+
+        // Update map with earthquake markers
+        function updateMap(earthquakes) {
+            // Clear existing markers
+            earthquakeMarkers.forEach(marker => map.removeLayer(marker));
+            earthquakeMarkers = [];
+
+            earthquakes.forEach(eq => {
+                try {
+                    const magnitude = parseFloat(eq.magnitude) || 0;
+                    const lat = parseFloat(eq.latitude);
+                    const lon = parseFloat(eq.longitude);
+                    
+                    if (isNaN(lat) || isNaN(lon)) return;
+
+                    const color = getMagnitudeColor(magnitude);
+                    const size = magnitude * 3;
+                    
+                    // Check if earthquake is recent (within 24 hours)
+                    const eqTime = new Date(eq.time);
+                    const now = new Date();
+                    const hoursSince = (now - eqTime) / (1000 * 60 * 60);
+                    const isRecent = hoursSince <= 24;
+                    
+                    // Create pulsing animation for recent earthquakes
+                    const pulseClass = isRecent ? 'earthquake-pulse' : '';
+                    
+                    // Main marker
+                    const mainMarker = L.circleMarker([lat, lon], {
+                        radius: size,
+                        fillColor: color,
+                        color: '#ffffff',
+                        weight: 2,
+                        opacity: 1,
+                        fillOpacity: 0.8,
+                        className: pulseClass
+                    });
+
+                    // Add glow effect with larger circle
+                    const glowMarker = L.circleMarker([lat, lon], {
+                        radius: size + 3,
+                        fillColor: color,
+                        color: color,
+                        weight: 0,
+                        opacity: 0.3,
+                        fillOpacity: 0.3,
+                        className: pulseClass
+                    });
+
+                    const depth = parseFloat(eq.depth) || 0;
+                    const distance = parseFloat(eq.distance_from_bogo_km) || 0;
+                    
+                    const popupContent = `
+                        <div style="color: #000; min-width: 200px;">
+                            <div style="font-weight: bold; font-size: 16px; margin-bottom: 8px; color: ${color};">
+                                M ${magnitude.toFixed(1)} Earthquake
+                            </div>
+                            <div style="margin: 4px 0;">
+                                <strong>📍 Location:</strong><br>${eq.place || 'Unknown'}
+                            </div>
+                            <div style="margin: 4px 0;">
+                                <strong>📏 Distance:</strong> ${distance.toFixed(1)} km from Bogo City
+                            </div>
+                            <div style="margin: 4px 0;">
+                                <strong>⏰ Time:</strong><br>${eq.time || 'Unknown'}
+                            </div>
+                            <div style="margin: 4px 0;">
+                                <strong>🌊 Depth:</strong> ${depth.toFixed(1)} km
+                            </div>
+                            <div style="margin: 4px 0;">
+                                <strong>📊 Source:</strong> ${eq.source || 'Unknown'}
+                            </div>
+                            ${isRecent ? '<div style="margin-top: 8px; color: #ef4444; font-weight: bold;">🔴 Recent Earthquake!</div>' : ''}
+                        </div>
+                    `;
+
+                    glowMarker.addTo(map);
+                    mainMarker.bindPopup(popupContent).addTo(map);
+                    
+                    earthquakeMarkers.push(glowMarker);
+                    earthquakeMarkers.push(mainMarker);
+                } catch (error) {
+                    console.error('Error adding earthquake marker:', error, eq);
+                }
+            });
+        }
+
+        function updateStats() {
+            fetch('/api/stats')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success !== false) {
+                        document.getElementById('totalPhilippines').textContent = data.total_philippines;
+                        document.getElementById('inCebu').textContent = data.in_cebu;
+                        document.getElementById('nearBogo').textContent = data.near_bogo;
+                        document.getElementById('last24h').textContent = data.last_24h;
+                    }
+                })
+                .catch(error => console.error('Error fetching stats:', error));
+        }
+
+        let previousNewsIds = new Set();
+        let newsAlertsEnabled = true;
+        let hazardMarkers = [];
+
+        function updateHazardHunterOnMap() {
+            // Clear existing hazard markers
+            hazardMarkers.forEach(marker => map.removeLayer(marker));
+            hazardMarkers = [];
+
+            fetch('/api/hazard-hunter')
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.success || data.hazards.length === 0) {
+                        console.log('No hazards to display on map');
+                        return;
+                    }
+
+                    const getSeverityColor = (severity) => {
+                        switch(severity?.toUpperCase()) {
+                            case 'CRITICAL': return '#dc2626';
+                            case 'HIGH': return '#ea580c';
+                            case 'MODERATE': return '#eab308';
+                            case 'LOW': return '#3b82f6';
+                            case 'MONITORING': return '#6b7280';
+                            default: return '#9ca3af';
+                        }
+                    };
+
+                    const getSeverityIcon = (type) => {
+                        if (type?.includes('SEISMIC')) return '⚠️';
+                        if (type?.includes('TSUNAMI')) return '🌊';
+                        if (type?.includes('ADVISORY')) return '📢';
+                        if (type?.includes('WARNING')) return '🚨';
+                        if (type?.includes('ALERT')) return '⚡';
+                        return '🎯';
+                    };
+
+                    data.hazards.forEach(hazard => {
+                        // Validate coordinates exist
+                        if (!hazard.coordinates || !hazard.coordinates.lat || !hazard.coordinates.lon) {
+                            console.warn('Hazard missing coordinates:', hazard);
+                            return;
+                        }
+
+                        const hazardIcon = L.divIcon({
+                            className: 'custom-hazard-icon',
+                            html: `
+                                <div style="
+                                    background: ${getSeverityColor(hazard.severity)};
+                                    width: 40px;
+                                    height: 40px;
+                                    border-radius: 50%;
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                    font-size: 24px;
+                                    border: 3px solid white;
+                                    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+                                    animation: pulse 2s infinite;
+                                ">
+                                    ${getSeverityIcon(hazard.type)}
+                                </div>
+                            `,
+                            iconSize: [40, 40],
+                            iconAnchor: [20, 20]
+                        });
+
+                        const marker = L.marker([hazard.coordinates.lat, hazard.coordinates.lon], {
+                            icon: hazardIcon
+                        }).addTo(map);
+
+                        marker.bindPopup(`
+                            <div style="color: #000; min-width: 250px;">
+                                <div style="background: ${getSeverityColor(hazard.severity)}; color: white; padding: 8px; margin: -10px -10px 10px -10px; border-radius: 4px 4px 0 0;">
+                                    <strong style="font-size: 16px;">${getSeverityIcon(hazard.type)} ${hazard.type}</strong>
+                                </div>
+                                <div style="padding: 5px 0;">
+                                    <strong>Severity:</strong> <span style="background: ${getSeverityColor(hazard.severity)}; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px;">${hazard.severity}</span><br>
+                                    <strong>Location:</strong> ${hazard.location}<br>
+                                    <strong>Coordinates:</strong> ${Number(hazard.coordinates.lat).toFixed(4)}°N, ${Number(hazard.coordinates.lon).toFixed(4)}°E<br>
+                                    <strong>Description:</strong> ${hazard.description.substring(0, 150)}...<br>
+                                    <strong>Source:</strong> ${hazard.source}
+                                </div>
+                            </div>
+                        `);
+
+                        hazardMarkers.push(marker);
+                    });
+
+                    console.log(`Added ${hazardMarkers.length} hazard markers to map`);
+                })
+                .catch(error => {
+                    console.error('Error fetching Hazard Hunter data for map:', error);
+                });
+        }
+
+        function updatePHIVOLCSNews() {
+            fetch('/api/phivolcs-news')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    const newsContainer = document.getElementById('phivolcsNews');
+                    
+                    console.log('PHIVOLCS News Data:', data); // Debug log
+                    
+                    if (!data || !data.posts || data.posts.length === 0) {
+                        newsContainer.innerHTML = 
+                            '<div class="text-center text-gray-500 py-8 text-sm">📭 No recent PHIVOLCS news about Bogo City</div>';
+                        return;
+                    }
+
+                    try {
+                        // Simple display without complex alert logic
+                        const html = data.posts.map(post => {
+                            try {
+                                // Validate all required fields
+                                if (!post || !post.id) {
+                                    console.warn('Invalid post object:', post);
+                                    return '';
+                                }
+                                
+                                // Validate timestamp - this is where the error was happening
+                                const timestamp = post.timestamp ? Number(post.timestamp) : Date.now();
+                                const isNew = (Date.now() - timestamp) < 3600000; // Less than 1 hour
+                                
+                                // Trigger alerts for new posts (simplified)
+                                if (!previousNewsIds.has(post.id) && previousNewsIds.size > 0 && newsAlertsEnabled && isNew) {
+                                    playAlarmSound();
+                                    showAlert(
+                                        `🚨 NEW PHIVOLCS NEWS`,
+                                        (post.content || 'New update available').substring(0, 100) + '...',
+                                        'bg-gradient-to-r from-green-600 to-emerald-600'
+                                    );
+                                }
+                                previousNewsIds.add(post.id);
+                                
+                                // Get time string safely
+                                let timeAgo = 'Recently';
+                                try {
+                                    timeAgo = getTimeAgo(timestamp);
+                                } catch (e) {
+                                    console.warn('Error getting time ago:', e);
+                                }
+                                
+                                return `
+                                    <div class="bg-gray-800/50 rounded-lg p-4 hover:bg-gray-700/50 transition-all duration-300 border border-gray-700 animate-slideIn ${isNew ? 'ring-2 ring-green-500' : ''}">
+                                        <div class="flex items-start gap-3">
+                                            <div class="flex-shrink-0">
+                                                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white font-bold">
+                                                    📡
+                                                </div>
+                                            </div>
+                                            <div class="flex-grow min-w-0">
+                                                <div class="flex items-center gap-2 mb-2 flex-wrap">
+                                                    <span class="text-xs font-bold px-2 py-1 rounded bg-green-600 text-white">
+                                                        ${post.source || 'PHIVOLCS'}
+                                                    </span>
+                                                    ${isNew ? '<span class="text-xs font-bold px-2 py-1 rounded bg-red-600 text-white animate-pulse">🔴 NEW</span>' : ''}
+                                                    <span class="text-xs text-gray-400">${timeAgo}</span>
+                                                </div>
+                                                <p class="text-sm text-gray-300 leading-relaxed mb-2">${post.content || 'No content available'}</p>
+                                                ${post.url ? `<a href="${post.url}" target="_blank" class="text-xs text-blue-400 hover:text-blue-300 transition-colors">View Source →</a>` : ''}
+                                            </div>
+                                        </div>
+                                    </div>
+                                `;
+                            } catch (postError) {
+                                console.error('Error rendering post:', postError, post);
+                                return ''; // Skip this post if there's an error
+                            }
+                        }).filter(html => html !== '').join('');
+
+                        if (html) {
+                            newsContainer.innerHTML = html;
+                        } else {
+                            newsContainer.innerHTML = '<div class="text-center text-gray-500 py-8 text-sm">📭 No valid news to display</div>';
+                        }
+                    } catch (renderError) {
+                        console.error('Error rendering news:', renderError);
+                        newsContainer.innerHTML = '<div class="text-center text-red-500 py-4 text-sm">⚠️ Error displaying news</div>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching PHIVOLCS news:', error);
+                    document.getElementById('phivolcsNews').innerHTML = 
+                        '<div class="text-center text-red-500 py-4 text-sm">⚠️ Error loading news - ' + error.message + '</div>';
+                });
+        }
+
+        function getTimeAgo(timestamp) {
+            const seconds = Math.floor((Date.now() - timestamp) / 1000);
+            
+            if (seconds < 60) return 'Just now';
+            if (seconds < 3600) return Math.floor(seconds / 60) + ' minutes ago';
+            if (seconds < 86400) return Math.floor(seconds / 3600) + ' hours ago';
+            if (seconds < 604800) return Math.floor(seconds / 86400) + ' days ago';
+            
+            return new Date(timestamp).toLocaleDateString();
+        }
+
+        function updateStats() {
+            fetch('/api/stats')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success !== false) {
+                        document.getElementById('totalPhilippines').textContent = data.total_philippines;
+                        document.getElementById('inCebu').textContent = data.in_cebu;
+                        document.getElementById('nearBogo').textContent = data.near_bogo;
+                        document.getElementById('last24h').textContent = data.last_24h;
+                    }
+                })
+                .catch(error => console.error('Error fetching stats:', error));
+        }
+
+        function updateEarthquakes() {
+            fetch('/api/earthquakes')
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.success) {
+                        document.getElementById('earthquakeList').innerHTML = 
+                            `<div class="text-center text-red-500">Error: ${data.error}</div>`;
+                        return;
+                    }
+
+                    document.getElementById('lastUpdate').textContent = data.last_updated;
+
+                    // Update data source status
+                    if (data.sources) {
+                        const usgsStatus = document.getElementById('usgsStatusDot');
+                        const phivolcsStatus = document.getElementById('phivolcsStatusDot');
+                        
+                        if (data.sources.usgs) {
+                            usgsStatus.classList.add('status-online');
+                            usgsStatus.classList.remove('status-offline');
+                            document.getElementById('usgsStatus').textContent = '✓';
+                        } else {
+                            usgsStatus.classList.add('status-offline');
+                            usgsStatus.classList.remove('status-online');
+                            document.getElementById('usgsStatus').textContent = '✗';
+                        }
+                        
+                        if (data.sources.phivolcs) {
+                            phivolcsStatus.classList.add('status-online');
+                            phivolcsStatus.classList.remove('status-offline');
+                            document.getElementById('phivolcsStatus').textContent = '✓';
+                        } else {
+                            phivolcsStatus.classList.add('status-offline');
+                            phivolcsStatus.classList.remove('status-online');
+                            document.getElementById('phivolcsStatus').textContent = '✗';
+                        }
+                    }
+
+                    checkForNewEarthquakes(data.earthquakes);
+                    
+                    // Update map with earthquake markers
+                    updateMap(data.earthquakes);
+
+                    const listContainer = document.getElementById('earthquakeList');
+                    
+                    if (data.earthquakes.length === 0) {
+                        listContainer.innerHTML = '<p class="text-center text-gray-400 py-8">No earthquakes detected in the past 7 days.</p>';
+                        return;
+                    }
+
+                    let html = '';
+                    data.earthquakes.forEach((eq, index) => {
+                        const magBg = getMagnitudeBg(eq.magnitude);
+                        const badges = [];
+                        
+                        if (eq.in_cebu) {
+                            badges.push('<span class="px-3 py-1 bg-green-500 text-white text-xs font-bold rounded-full">CEBU</span>');
+                        }
+                        if (eq.distance_from_bogo_km < 50) {
+                            badges.push('<span class="px-3 py-1 bg-red-500 text-white text-xs font-bold rounded-full">NEAR BOGO</span>');
+                        }
+                        
+                        const sourceColor = eq.source === 'USGS' ? 'bg-blue-500' : 'bg-green-600';
+                        badges.push(`<span class="px-3 py-1 ${sourceColor} text-white text-xs font-bold rounded-full">${eq.source || 'USGS'}</span>`);
+
+                        html += `
+                            <div class="glass-white text-black rounded-xl p-4 hover:shadow-xl transition-all duration-300 glow-hover">
+                                <div class="flex items-start gap-4">
+                                    <div class="flex-shrink-0">
+                                        <div class="${magBg} text-white rounded-xl px-4 py-3 text-center min-w-[80px]">
+                                            <div class="text-2xl font-black">M${eq.magnitude.toFixed(1)}</div>
+                                        </div>
+                                    </div>
+                                    <div class="flex-grow">
+                                        <h4 class="font-bold text-lg mb-2">${eq.place}</h4>
+                                        <div class="text-sm text-gray-600 space-y-1">
+                                            <p>📅 ${eq.time}</p>
+                                            <p>📍 ${eq.latitude.toFixed(3)}°N, ${eq.longitude.toFixed(3)}°E | ⬇️ ${eq.depth.toFixed(1)}km depth</p>
+                                            <p class="font-semibold">${eq.distance_from_bogo_km} km from Bogo City</p>
+                                        </div>
+                                        <div class="flex flex-wrap gap-2 mt-3">
+                                            ${badges.join(' ')}
+                                        </div>
+                                    </div>
+                                    <div class="flex-shrink-0">
+                                        <a href="${eq.url}" target="_blank" class="px-4 py-2 bg-black text-white rounded-lg text-sm font-bold hover:bg-gray-800 transition-colors">
+                                            Details →
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    listContainer.innerHTML = html;
+                })
+                .catch(error => {
+                    console.error('Error fetching earthquakes:', error);
+                    document.getElementById('earthquakeList').innerHTML = 
+                        '<div class="text-center text-red-500 py-8">Error loading earthquake data. Please try again.</div>';
+                });
+        }
+
+        // Request notification permission
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+
+        // Initial load
+        updateEarthquakes();
+        updateStats();
+        updateHazardHunterOnMap();
+        updatePHIVOLCSNews();
+
+        // Auto-refresh every 1 second
+        setInterval(() => {
+            updateEarthquakes();
+            updateStats();
+            updateHazardHunterOnMap();
+            updatePHIVOLCSNews();
+        }, 1000);
+    </script>
+</body>
+</html>

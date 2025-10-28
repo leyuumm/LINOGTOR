@@ -1,0 +1,115 @@
+# Real-Time Earthquake Detector for Bogo City, Cebu, Philippines
+
+**Copyright © 2025 Lliam Khenzo P. Monleon. All Rights Reserved.**
+
+A real-time earthquake monitoring system specifically designed to track seismic activity in the Philippines, with a special focus on Cebu Province and Bogo City.
+
+## Features
+
+- **Real-time earthquake data** from USGS (United States Geological Survey)
+- **Focused on Philippines** with special attention to Cebu Province and Bogo City
+- **Interactive map** showing earthquake locations relative to Bogo City
+- **Distance calculations** from Bogo City for each earthquake
+- **Auto-refresh** every 60 seconds to get the latest data
+- **7-day historical data** display
+- **Color-coded magnitude** indicators:
+  - Green: Minor (< 3.0)
+  - Orange: Light (3.0 - 4.9)
+  - Red: Moderate (5.0 - 6.9)
+  - Dark Red: Strong (7.0+)
+- **Statistics dashboard** showing:
+  - Total earthquakes in Philippines (last 7 days)
+  - Earthquakes in Cebu Province
+  - Earthquakes within 50km of Bogo City
+  - Earthquakes in the last 24 hours
+
+## Geographic Focus
+
+- **Primary Focus**: Bogo City, Cebu (11.0333°N, 124.0167°E)
+- **Secondary Focus**: Cebu Province
+- **Coverage Area**: Entire Philippines
+
+## Installation
+
+1. Make sure you have Python 3.7+ installed on your system
+
+2. Install the required dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+## Usage
+
+1. Run the application:
+```bash
+python app.py
+```
+
+2. Open your web browser and navigate to:
+```
+http://localhost:5000
+```
+
+3. The application will automatically:
+   - Load earthquake data from the USGS API
+   - Display earthquakes on an interactive map
+   - Show detailed information for each earthquake
+   - Calculate distances from Bogo City
+   - Refresh every 60 seconds
+
+## API Endpoints
+
+- `GET /` - Main web interface
+- `GET /api/earthquakes` - JSON data of all earthquakes
+- `GET /api/stats` - JSON statistics summary
+
+## Data Source
+
+This application uses the USGS Earthquake API:
+- API Documentation: https://earthquake.usgs.gov/fdsnws/event/1/
+- Data is updated in real-time by USGS
+- Covers earthquakes worldwide with magnitude 1.0+
+
+## Location Details
+
+### Bogo City, Cebu
+- Coordinates: 11.0333°N, 124.0167°E
+- Province: Cebu
+- Region: Central Visayas (Region VII)
+
+### Cebu Province Boundaries
+- Latitude: 9.5°N to 11.5°N
+- Longitude: 123.0°E to 124.5°E
+
+## Safety Information
+
+**Important Notes:**
+- This is a monitoring tool, not an early warning system
+- Always follow official guidelines from PHIVOLCS (Philippine Institute of Volcanology and Seismology)
+- In case of emergency, follow local authority instructions
+- For official Philippine earthquake information, visit: https://www.phivolcs.dost.gov.ph/
+
+## Technology Stack
+
+- **Backend**: Python, Flask
+- **Frontend**: HTML, CSS, JavaScript, Bootstrap 5
+- **Mapping**: Leaflet.js
+- **Data Source**: USGS Earthquake API
+
+## License
+
+**Copyright © 2025 Lliam Khenzo P. Monleon. All Rights Reserved.**
+
+This software and associated documentation files are the proprietary property of Lliam Khenzo P. Monleon. Unauthorized copying, distribution, modification, or use of this software is strictly prohibited without explicit written permission from the copyright holder.
+
+## Author
+
+**Lliam Khenzo P. Monleon**
+
+## Contributing
+
+Feel free to submit issues or pull requests to improve the earthquake detector!
+
+## Disclaimer
+
+This application is for informational purposes only. Always refer to official sources like PHIVOLCS for authoritative earthquake information and safety guidelines.

@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<!--
+    Real-Time Earthquake Detector - Bogo City, Cebu, Philippines
+    Copyright © 2025 Lliam Khenzo P. Monleon. All Rights Reserved.
+    
+    This software and associated documentation files are the proprietary
+    property of Lliam Khenzo P. Monleon. Unauthorized copying, distribution,
+    modification, or use of this software is strictly prohibited.
+-->
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="author" content="Lliam Khenzo P. Monleon">
+    <meta name="copyright" content="Copyright © 2025 Lliam Khenzo P. Monleon. All Rights Reserved.">
+    <title>Earthquake Detector - Bogo City, Cebu, Philippines</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        body {
+            background: #000000;
+            color: #ffffff;
+            min-height: 100vh;
+        }
+        
+        /* Animated gradient background */
+        .bg-animated {
+            background: linear-gradient(-45deg, #000000, #1a1a1a, #0a0a0a, #000000);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+        }
+        
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        /* Glassmorphism effect */
+        .glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .glass-white {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Map container */
+        #map {
+            height: 600px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Fade in animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        .animate-fadeInUp {
+            animation: fadeInUp 0.6s ease-out forwards;
+        }
+        
+        .animate-fadeIn {
+            animation: fadeIn 0.8s ease-out forwards;
+        }
+        
+        .animate-slideInRight {
+            animation: slideInRight 0.6s ease-out forwards;
+        }
+        
+        .animate-slideInLeft {
+            animation: slideInLeft 0.6s ease-out forwards;
+        }
+        
+        /* Pulse animation for alerts */
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+        }
+        
+        .animate-pulse-custom {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        /* Spinner */
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+        
+        /* Glow effect */
+        .glow {
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+        }
+        
+        .glow-hover:hover {
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+            transition: all 0.3s ease;
+        }
+        
+        /* Alert notification */
+        @keyframes slideInFromRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .alert-notification {
+            animation: slideInFromRight 0.5s ease-out;
+        }
+        
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #1a1a1a;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        
+        /* Status indicator */
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+        }
+        
+        .status-online {
+            background: #22c55e;
+            box-shadow: 0 0 8px #22c55e;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-offline {
+            background: #ef4444;
+        }
+    </style>
+</head>
+<body class="bg-animated">
+
+        <!-- Header -->
+        <div class="card header-card">
+            <div class="card-body text-center">
+                <h1 class="display-4">🌍 Real-Time Linogerns Detector</h1>
+                <h3>Bogo City, Cebu, Philippines</h3>
+                <p class="mb-0">Monitoring seismic activity in the Philippines, with focus on Cebu Province</p>
+                <p class="mt-1"><small><strong>Data Sources:</strong> USGS <span id="usgsStatus">🔄</span> | PHIVOLCS <span id="phivolcsStatus">🔄</span></small></p>
+                <p class="mt-2"><small>© 2025 Lliam Khenzo P. Monleon. All Rights Reserved.</small></p>
+                <div class="auto-refresh mt-3">
+                    <small>🔄 Auto-refreshing every <strong>1 second</strong> | Last updated: <span id="lastUpdate">Loading...</span></small>
+                </div>
+                <div class="alert-controls mt-3">
+                    <button id="alertToggle" class="btn-alert-toggle" onclick="toggleAlerts()">
+                        🔔 Alerts: <span id="alertStatus">ENABLED</span>
+                    </button>
+                    <button class="btn-alert-toggle" onclick="testAlert()" style="background: #ffc107; margin-left: 10px;">
+                        🔊 Test Alert
+                    </button>
+                    <br>
+                    <small class="mt-2 d-block">Alert for: Magnitude ≥ <select id="minMagnitude" onchange="updateMinMagnitude()" style="background: rgba(255,255,255,0.3); border: none; color: white; border-radius: 3px;">
+                        <option value="2.0" selected>2.0</option>
+                        <option value="3.0">3.0</option>
+                        <option value="4.0">4.0</option>
+                        <option value="5.0">5.0</option>
+                    </select> | Distance ≤ <select id="maxDistance" onchange="updateMaxDistance()" style="background: rgba(255,255,255,0.3); border: none; color: white; border-radius: 3px;">
+                        <option value="50">50 km</option>
+                        <option value="100" selected>100 km</option>
+                        <option value="200">200 km</option>
+                        <option value="500">500 km</option>
+                        <option value="99999">Any distance</option>
+                    </select> from Bogo City</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="row" id="statsContainer">
+            <div class="col-md-3 col-sm-6 mb-3">
+                <div class="card stat-card">
+                    <div class="stat-number" id="totalPhilippines">-</div>
+                    <div class="stat-label">Total in Philippines (7 days)</div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6 mb-3">
+                <div class="card stat-card">
+                    <div class="stat-number" id="inCebu">-</div>
+                    <div class="stat-label">In Cebu Province</div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6 mb-3">
+                <div class="card stat-card">
+                    <div class="stat-number" id="nearBogo">-</div>
+                    <div class="stat-label">Within 50km of Bogo City</div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6 mb-3">
+                <div class="card stat-card">
+                    <div class="stat-number" id="last24h">-</div>
+                    <div class="stat-label">Last 24 Hours</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Map -->
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">📍 Earthquake Map - Centered on Bogo City</h4>
+            </div>
+            <div class="card-body">
+                <div id="map"></div>
+            </div>
+        </div>
+
+        <!-- Earthquake List -->
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0">📋 Recent Earthquakes (Last 7 Days)</h4>
+            </div>
+            <div class="card-body" id="earthquakeList">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p class="mt-3">Loading earthquake data...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Alarm Sound -->
+    <audio id="alarmSound" preload="auto">
+        <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTcIGWi77eefTRAMUKfj8LZjHAY4ktfyy3ksBSR3x/DdkEAKFF606+uoVRQKRp/g8r5sIQUrgc7y2Yk3CBlou+3nn00QDFCn4/C2YxwGOJLX8st5LAUkd8fw3ZBACxVftOvrqFUUCkaf4PK+bCEFK4HO8tmJNwgZaLvt559NEAxQp+PwtmMcBjiS1/LLeSwFJHfH8N2QQAsVX7Tr66hVFApGn+DyvmwhBSuBzvLZiTcIGWi77eefTRAMUKfj8LZjHAY4ktfyy3ksBSR3x/DdkEALFV+06+uoVRQKRp/g8r5sIQUrgc7y2Yk3CBlou+3nn00QDFCn4/C2YxwGOJLX8st5LAUkd8fw3ZBACxVftOvrqFUUCkaf4PK+bCEFK4HO8tmJNwgZaLvt559NEAxQp+PwtmMcBjiS1/LLeSwFJHfH8N2QQAsVX7Tr66hVFApGn+DyvmwhBSuBzvLZiTcIGWi77eefTRAMUKfj8LZjHAY4ktfyy3ksBSR3x/DdkEALFV+06+uoVRQKRp/g8r5sIQUrgc7y2Yk3CBlou+3nn00QDFCn4/C2YxwGOJLX8st5LAUkd8fw3ZBACxVftOvrqFUUCkaf4PK+bCEFK4HO8tmJNwgZaLvt559NEAxQp+PwtmMcBjiS1/LLeSwFJHfH8N2QQAsVX7Tr66hVFApGn+DyvmwhBSuBzvLZiTcIGWi77eefTRAMUKfj8LZjHAY4ktfyy3ksBSR3x/DdkEALFV+06+uoVRQK" type="audio/wav">
+    </audio>
+
+    <script>
+        // Initialize map centered on Bogo City
+        const map = L.map('map').setView([11.0333, 124.0167], 9);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Add marker for Bogo City
+        const bogoMarker = L.marker([11.0333, 124.0167], {
+            icon: L.divIcon({
+                className: 'bogo-marker',
+                html: '<div style="background-color: red; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white;"></div>',
+                iconSize: [20, 20]
+            })
+        }).addTo(map);
+        bogoMarker.bindPopup('<b>Bogo City, Cebu</b><br>Monitoring Center').openPopup();
+
+        // Add circle showing 50km radius
+        L.circle([11.0333, 124.0167], {
+            color: 'red',
+            fillColor: '#f03',
+            fillOpacity: 0.1,
+            radius: 50000
+        }).addTo(map).bindPopup('50km radius from Bogo City');
+
+        let earthquakeMarkers = [];
+        let lastEarthquakes = new Set();
+        let alertsEnabled = true;
+        let minAlertMagnitude = 2.0;
+        let maxAlertDistance = 100;
+        let isFirstLoad = true;
+
+        // Create alarm sound using Web Audio API for better browser support
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playAlarmSound() {
+            if (!alertsEnabled) return;
+            
+            // Create oscillator for siren sound
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(400, audioContext.currentTime + 0.5);
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 1);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 1);
+            
+            // Second beep
+            setTimeout(() => {
+                const oscillator2 = audioContext.createOscillator();
+                const gainNode2 = audioContext.createGain();
+                
+                oscillator2.connect(gainNode2);
+                gainNode2.connect(audioContext.destination);
+                
+                oscillator2.type = 'sine';
+                oscillator2.frequency.setValueAtTime(800, audioContext.currentTime);
+                oscillator2.frequency.exponentialRampToValueAtTime(400, audioContext.currentTime + 0.5);
+                
+                gainNode2.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 1);
+                
+                oscillator2.start(audioContext.currentTime);
+                oscillator2.stop(audioContext.currentTime + 1);
+            }, 1000);
+        }
+
+        function showAlert(earthquake) {
+            const alertContainer = document.getElementById('alertContainer');
+            
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-danger alert-notification pulse';
+            alertDiv.innerHTML = `
+                <h4 class="alert-heading">🚨 EARTHQUAKE ALERT!</h4>
+                <hr>
+                <p><strong>Magnitude:</strong> ${earthquake.magnitude.toFixed(1)}</p>
+                <p><strong>Location:</strong> ${earthquake.place}</p>
+                <p><strong>Distance from Bogo City:</strong> ${earthquake.distance_from_bogo_km} km</p>
+                <p><strong>Time:</strong> ${earthquake.time}</p>
+                <p><strong>Depth:</strong> ${earthquake.depth.toFixed(1)} km</p>
+                ${earthquake.in_cebu ? '<p class="text-danger"><strong>⚠️ IN CEBU PROVINCE!</strong></p>' : ''}
+                <hr>
+                <button type="button" class="btn btn-sm btn-light" onclick="this.parentElement.remove()">Dismiss</button>
+            `;
+            
+            alertContainer.appendChild(alertDiv);
+            
+            // Play alarm sound
+            playAlarmSound();
+            
+            // Request notification permission and show browser notification
+            if ('Notification' in window && Notification.permission === 'granted') {
+                new Notification('🚨 Earthquake Alert!', {
+                    body: `Magnitude ${earthquake.magnitude.toFixed(1)} - ${earthquake.place}\n${earthquake.distance_from_bogo_km} km from Bogo City`,
+                    icon: '🌍',
+                    requireInteraction: true
+                });
+            }
+            
+            // Auto-dismiss after 30 seconds
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 30000);
+        }
+
+        function toggleAlerts() {
+            alertsEnabled = !alertsEnabled;
+            const btn = document.getElementById('alertToggle');
+            const status = document.getElementById('alertStatus');
+            
+            if (alertsEnabled) {
+                btn.classList.remove('disabled');
+                status.textContent = 'ENABLED';
+                // Request notification permission
+                if ('Notification' in window && Notification.permission === 'default') {
+                    Notification.requestPermission();
+                }
+            } else {
+                btn.classList.add('disabled');
+                status.textContent = 'DISABLED';
+            }
+        }
+
+        function testAlert() {
+            const testEarthquake = {
+                magnitude: 5.5,
+                place: 'TEST ALERT - Near Bogo City, Cebu',
+                distance_from_bogo_km: 15.5,
+                time: new Date().toISOString().replace('T', ' ').substring(0, 19) + ' UTC',
+                depth: 10.0,
+                in_cebu: true
+            };
+            showAlert(testEarthquake);
+        }
+
+        function updateMinMagnitude() {
+            minAlertMagnitude = parseFloat(document.getElementById('minMagnitude').value);
+        }
+
+        function updateMaxDistance() {
+            maxAlertDistance = parseFloat(document.getElementById('maxDistance').value);
+        }
+
+        function checkForNewEarthquakes(earthquakes) {
+            if (isFirstLoad) {
+                // On first load, just store the IDs without alerting
+                earthquakes.forEach(eq => lastEarthquakes.add(eq.id));
+                isFirstLoad = false;
+                return;
+            }
+
+            earthquakes.forEach(eq => {
+                if (!lastEarthquakes.has(eq.id)) {
+                    // New earthquake detected
+                    if (alertsEnabled && 
+                        eq.magnitude >= minAlertMagnitude && 
+                        eq.distance_from_bogo_km <= maxAlertDistance) {
+                        showAlert(eq);
+                    }
+                    lastEarthquakes.add(eq.id);
+                }
+            });
+        }
+
+        function getMagnitudeColor(mag) {
+            if (mag < 3) return 'green';
+            if (mag < 5) return 'orange';
+            if (mag < 7) return 'red';
+            return 'darkred';
+        }
+
+        function getMagnitudeClass(mag) {
+            if (mag < 3) return 'mag-low';
+            if (mag < 5) return 'mag-medium';
+            if (mag < 7) return 'mag-high';
+            return 'mag-extreme';
+        }
+
+        function updateStats() {
+            fetch('/api/stats')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success !== false) {
+                        document.getElementById('totalPhilippines').textContent = data.total_philippines;
+                        document.getElementById('inCebu').textContent = data.in_cebu;
+                        document.getElementById('nearBogo').textContent = data.near_bogo;
+                        document.getElementById('last24h').textContent = data.last_24h;
+                    }
+                })
+                .catch(error => console.error('Error fetching stats:', error));
+        }
+
+        function updateEarthquakes() {
+            fetch('/api/earthquakes')
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.success) {
+                        document.getElementById('earthquakeList').innerHTML = 
+                            `<div class="alert alert-danger">Error: ${data.error}</div>`;
+                        return;
+                    }
+
+                    // Update last updated time
+                    document.getElementById('lastUpdate').textContent = data.last_updated;
+
+                    // Update data source status
+                    if (data.sources) {
+                        document.getElementById('usgsStatus').textContent = data.sources.usgs ? '✅' : '❌';
+                        document.getElementById('phivolcsStatus').textContent = data.sources.phivolcs ? '✅' : '❌';
+                    }
+
+                    // Check for new earthquakes and alert if needed
+                    checkForNewEarthquakes(data.earthquakes);
+
+                    // Clear existing markers
+                    earthquakeMarkers.forEach(marker => map.removeLayer(marker));
+                    earthquakeMarkers = [];
+
+                    // Update earthquake list
+                    const listContainer = document.getElementById('earthquakeList');
+                    
+                    if (data.earthquakes.length === 0) {
+                        listContainer.innerHTML = '<p class="text-center">No earthquakes detected in the past 7 days.</p>';
+                        return;
+                    }
+
+                    let html = '';
+                    data.earthquakes.forEach((eq, index) => {
+                        const magClass = getMagnitudeClass(eq.magnitude);
+                        const badges = [];
+                        
+                        if (eq.in_cebu) {
+                            badges.push('<span class="cebu-badge">CEBU</span>');
+                        }
+                        if (eq.distance_from_bogo_km < 50) {
+                            badges.push('<span class="bogo-badge">NEAR BOGO</span>');
+                        }
+                        
+                        // Add source badge
+                        const sourceColor = eq.source === 'USGS' ? '#007bff' : '#28a745';
+                        badges.push(`<span class="cebu-badge" style="background: ${sourceColor};">${eq.source || 'USGS'}</span>`);
+
+                        html += `
+                            <div class="earthquake-item">
+                                <div class="row align-items-center">
+                                    <div class="col-md-1 text-center">
+                                        <div class="magnitude ${magClass}">M${eq.magnitude.toFixed(1)}</div>
+                                    </div>
+                                    <div class="col-md-7">
+                                        <strong>${eq.place}</strong><br>
+                                        <small>
+                                            📅 ${eq.time} | 
+                                            📍 ${eq.latitude.toFixed(3)}°N, ${eq.longitude.toFixed(3)}°E | 
+                                            ⬇️ ${eq.depth.toFixed(1)}km depth
+                                        </small>
+                                    </div>
+                                    <div class="col-md-3 text-end">
+                                        <strong>${eq.distance_from_bogo_km} km</strong> from Bogo<br>
+                                        ${badges.join(' ')}
+                                    </div>
+                                    <div class="col-md-1 text-center">
+                                        <a href="${eq.url}" target="_blank" class="btn btn-sm btn-primary">Details</a>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+
+                        // Add marker to map
+                        const marker = L.circleMarker([eq.latitude, eq.longitude], {
+                            radius: Math.max(eq.magnitude * 2, 3),
+                            fillColor: getMagnitudeColor(eq.magnitude),
+                            color: '#000',
+                            weight: 1,
+                            opacity: 1,
+                            fillOpacity: 0.7
+                        }).addTo(map);
+
+                        marker.bindPopup(`
+                            <strong>M${eq.magnitude.toFixed(1)} Earthquake</strong><br>
+                            ${eq.place}<br>
+                            ${eq.time}<br>
+                            Distance from Bogo: ${eq.distance_from_bogo_km} km<br>
+                            Depth: ${eq.depth.toFixed(1)} km
+                        `);
+
+                        earthquakeMarkers.push(marker);
+                    });
+
+                    listContainer.innerHTML = html;
+                })
+                .catch(error => {
+                    console.error('Error fetching earthquakes:', error);
+                    document.getElementById('earthquakeList').innerHTML = 
+                        '<div class="alert alert-danger">Error loading earthquake data. Please try again.</div>';
+                });
+        }
+
+        // Request notification permission on load
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+
+        // Initial load
+        updateEarthquakes();
+        updateStats();
+
+        // Auto-refresh every 1 second for real-time monitoring
+        setInterval(() => {
+            updateEarthquakes();
+            updateStats();
+        }, 1000);
+    </script>
+</body>
+</html>
