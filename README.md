@@ -2,6 +2,8 @@
 
 **Copyright © 2025 Lliam Khenzo P. Monleon. All Rights Reserved.**
 
+🌐 **Live Demo**: [https://web-production-dc7b.up.railway.app](https://web-production-dc7b.up.railway.app)
+
 A real-time earthquake monitoring system specifically designed to track seismic activity in the Philippines, with a special focus on Cebu Province and Bogo City.
 
 ## Features
