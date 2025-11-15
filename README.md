@@ -1,19 +1,34 @@
-# Real-Time Earthquake Detector for Bogo City, Cebu, Philippines
+# LINOGTOR - Real-Time Earthquake Detector for Bogo City, Cebu, Philippines
 
 **Copyright © 2025 Lliam Khenzo P. Monleon. All Rights Reserved.**
 
 🌐 **Live Demo**: [https://web-production-dc7b.up.railway.app](https://web-production-dc7b.up.railway.app)
 
+📱 **iOS App Available**: Install as PWA on iPhone/iPad - [See Instructions](IOS_INSTALL.md)
+
 A real-time earthquake monitoring system specifically designed to track seismic activity in the Philippines, with a special focus on Cebu Province and Bogo City.
 
-## Features
+## ✨ Features
 
-- **Real-time earthquake data** from USGS (United States Geological Survey)
-- **Focused on Philippines** with special attention to Cebu Province and Bogo City
-- **Interactive map** showing earthquake locations relative to Bogo City
+### Core Functionality
+- **Real-time earthquake data** from USGS + PHIVOLCS
+- **Focused on Bogo City** (50km radius monitoring)
+- **Interactive map** showing earthquake epicenters
 - **Distance calculations** from Bogo City for each earthquake
-- **Auto-refresh** every 60 seconds to get the latest data
+- **Auto-refresh** every 30 seconds to get the latest data
 - **7-day historical data** display
+- **Sound & Visual Alerts** for new earthquakes
+
+### PWA Features (NEW! 📱)
+- **📲 Install on iOS** - Works like a native app
+- **📴 Offline Mode** - Access cached data without internet
+- **🔔 Push Notifications** - Get alerts even when app is closed
+- **🎨 Custom App Icon** - Beautiful home screen presence
+- **⚡ Fast Loading** - Cached resources for instant access
+- **🔄 Auto-Updates** - Always get the latest version
+- **🖼️ Full Screen** - Immersive experience without browser UI
+
+### Data Visualization
 - **Color-coded magnitude** indicators:
   - Green: Minor (< 3.0)
   - Orange: Light (3.0 - 4.9)
