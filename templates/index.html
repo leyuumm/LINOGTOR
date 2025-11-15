@@ -167,6 +167,26 @@
             animation: earthquakePulse 2s infinite;
         }
         
+        /* Epicenter highlight animation */
+        @keyframes epicenterHighlight {
+            0% {
+                opacity: 0.8;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.4;
+                transform: scale(1.2);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(1.5);
+            }
+        }
+        
+        .epicenter-highlight {
+            animation: epicenterHighlight 1.5s ease-out;
+        }
+        
         /* Leaflet marker custom styles for epicenters */
         .leaflet-marker-icon.earthquake-epicenter {
             border-radius: 50%;
@@ -617,11 +637,11 @@
                     };
                 });
                 isFirstLoad = false;
-                console.log('Initial earthquake data loaded:', lastEarthquakes.size, 'earthquakes');
+                console.log('✅ Initial load: Stored', lastEarthquakes.size, 'earthquakes (no alerts on first load)');
                 return;
             }
 
-            // Check for new earthquakes with enhanced validation
+            // Check for new earthquakes with STRICT validation to prevent false alerts
             const currentTime = Date.now();
             const newEarthquakes = [];
             
@@ -629,12 +649,23 @@
                 // Check if this is genuinely a new earthquake
                 const isNewById = !lastEarthquakes.has(eq.id);
                 
-                // Additional validation: check if within last 30 minutes (real recent earthquake)
+                if (!isNewById) return; // Skip if we've already seen this earthquake
+                
+                // CRITICAL: Only alert for earthquakes that happened in the last 5 MINUTES
+                // This prevents alerts for old earthquakes that just appeared in the feed
                 const earthquakeTime = new Date(eq.timestamp).getTime();
                 const minutesSinceQuake = (currentTime - earthquakeTime) / (1000 * 60);
-                const isVeryRecent = minutesSinceQuake <= 30;
+                const isReallyRecent = minutesSinceQuake <= 5; // Only last 5 minutes!
                 
-                // Check if we haven't seen this exact location and magnitude recently
+                console.log('🔍 New earthquake found:', {
+                    id: eq.id,
+                    magnitude: eq.magnitude,
+                    location: eq.place,
+                    minutesAgo: minutesSinceQuake.toFixed(1),
+                    willAlert: isReallyRecent
+                });
+                
+                // Check for duplicate location/magnitude
                 let isDuplicate = false;
                 if (window.earthquakeData) {
                     for (let id in window.earthquakeData) {
@@ -647,12 +678,13 @@
                         
                         if (magDiff < 0.1 && latDiff < 0.05 && lonDiff < 0.05 && timeDiff < 3600000) {
                             isDuplicate = true;
+                            console.log('⚠️ Duplicate detected, skipping alert');
                             break;
                         }
                     }
                 }
                 
-                if (isNewById && !isDuplicate) {
+                if (!isDuplicate) {
                     // Store the new earthquake data
                     if (!window.earthquakeData) window.earthquakeData = {};
                     window.earthquakeData[eq.id] = {
@@ -663,25 +695,25 @@
                         distance: eq.distance_from_bogo_km
                     };
                     
-                    // Check alert conditions with enhanced criteria
+                    // Check alert conditions
                     const meetsAlertCriteria = 
                         alertsEnabled && 
                         eq.magnitude >= minAlertMagnitude && 
                         eq.distance_from_bogo_km <= maxAlertDistance;
                     
-                    // Only alert if very recent (within 30 min) OR if it's a significant earthquake
-                    const shouldAlert = meetsAlertCriteria && (isVeryRecent || eq.magnitude >= 4.0);
+                    // ONLY alert if it's REALLY recent (last 5 minutes) to avoid false alarms
+                    const shouldAlert = meetsAlertCriteria && isReallyRecent;
                     
                     if (shouldAlert) {
-                        console.log('🚨 NEW EARTHQUAKE DETECTED:', {
-                            id: eq.id,
+                        console.log('🚨 ALERT TRIGGERED:', {
                             magnitude: eq.magnitude,
-                            location: eq.place,
                             distance: eq.distance_from_bogo_km + 'km',
                             minutesAgo: minutesSinceQuake.toFixed(1),
                             time: eq.time
                         });
                         newEarthquakes.push(eq);
+                    } else if (meetsAlertCriteria && !isReallyRecent) {
+                        console.log('ℹ️ Earthquake detected but too old for alert (', minutesSinceQuake.toFixed(1), 'minutes ago)');
                     }
                     
                     lastEarthquakes.add(eq.id);
@@ -690,7 +722,7 @@
             
             // Alert for new earthquakes (one by one with slight delay to avoid overwhelming)
             if (newEarthquakes.length > 0) {
-                console.log(`⚠️ Triggering ${newEarthquakes.length} earthquake alert(s)`);
+                console.log(`⚡ Triggering ${newEarthquakes.length} REAL earthquake alert(s)`);
                 newEarthquakes.forEach((eq, index) => {
                     setTimeout(() => {
                         showAlert(eq);
@@ -731,11 +763,15 @@
             return 'bg-gray-500'; // Gray - Micro
         }
 
+        // Store marker references by earthquake ID for easy access
+        window.markersByEqId = {};
+        
         // Update map with earthquake markers
         function updateMap(earthquakes) {
             // Clear existing markers
             earthquakeMarkers.forEach(marker => map.removeLayer(marker));
             earthquakeMarkers = [];
+            window.markersByEqId = {}; // Clear marker references
 
             earthquakes.forEach(eq => {
                 try {
@@ -811,10 +847,53 @@
                     
                     earthquakeMarkers.push(glowMarker);
                     earthquakeMarkers.push(mainMarker);
+                    
+                    // Store marker reference by earthquake ID for "Show Epicenter" functionality
+                    window.markersByEqId[eq.id] = {
+                        marker: mainMarker,
+                        lat: lat,
+                        lon: lon,
+                        magnitude: magnitude,
+                        color: color
+                    };
                 } catch (error) {
                     console.error('Error adding earthquake marker:', error, eq);
                 }
             });
+        }
+        
+        // Function to show epicenter on map with visual highlight
+        function showEpicenter(eqId, lat, lon) {
+            console.log('🎯 Showing epicenter for earthquake:', eqId);
+            
+            // Center and zoom to epicenter
+            map.setView([lat, lon], 12);
+            
+            // Find and open the marker popup
+            if (window.markersByEqId && window.markersByEqId[eqId]) {
+                const markerInfo = window.markersByEqId[eqId];
+                setTimeout(() => {
+                    markerInfo.marker.openPopup();
+                }, 300); // Small delay for smooth animation
+                
+                // Add temporary highlight ring animation
+                const highlightRing = L.circle([lat, lon], {
+                    radius: 5000, // 5km radius
+                    color: markerInfo.color,
+                    fillColor: markerInfo.color,
+                    weight: 3,
+                    opacity: 0.8,
+                    fillOpacity: 0.1,
+                    className: 'epicenter-highlight'
+                }).addTo(map);
+                
+                // Remove highlight after 3 seconds
+                setTimeout(() => {
+                    map.removeLayer(highlightRing);
+                }, 3000);
+            } else {
+                console.warn('⚠️ Marker not found for earthquake:', eqId);
+            }
         }
 
         function updateStats() {
@@ -993,8 +1072,8 @@
                                             <p>📍 ${eq.latitude.toFixed(3)}°N, ${eq.longitude.toFixed(3)}°E</p>
                                             <p>⬇️ ${eq.depth.toFixed(1)} km depth</p>
                                         </div>
-                                        <button onclick="map.setView([${eq.latitude}, ${eq.longitude}], 11)" class="mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 transition-colors">
-                                            📍 Show Epicenter on Map
+                                        <button onclick="showEpicenter('${eq.id}', ${eq.latitude}, ${eq.longitude})" class="mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl">
+                                            🎯 Show Epicenter on Map
                                         </button>
                                     </div>
                                 </div>
