@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline - LINOGTOR</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+    </style>
+</head>
+<body class="text-white">
+    <div class="text-center px-6">
+        <div class="mb-8">
+            <svg class="w-32 h-32 mx-auto pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3m8.293 8.293l1.414 1.414"></path>
+            </svg>
+        </div>
+        
+        <h1 class="text-4xl font-black mb-4">You're Offline</h1>
+        <p class="text-xl mb-8 text-gray-200">
+            LINOGTOR needs an internet connection to monitor earthquakes in real-time.
+        </p>
+        
+        <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 mb-8 max-w-md mx-auto">
+            <p class="text-sm text-gray-200 mb-4">
+                📡 Unable to connect to earthquake monitoring services
+            </p>
+            <p class="text-xs text-gray-300">
+                Please check your internet connection and try again.
+            </p>
+        </div>
+        
+        <button onclick="window.location.reload()" class="bg-white text-purple-600 px-8 py-3 rounded-full font-bold text-lg hover:bg-gray-100 transition-all transform hover:scale-105 shadow-xl">
+            🔄 Try Again
+        </button>
+        
+        <div class="mt-12 text-sm text-gray-300">
+            <p>LINOGTOR - Real-time Earthquake Monitoring</p>
+            <p class="text-xs mt-2">Bogo City, Cebu, Philippines</p>
+        </div>
+    </div>
+
+    <script>
+        // Auto-reload when connection is restored
+        window.addEventListener('online', () => {
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

@@ -626,6 +626,11 @@ def index():
     """Render the main page"""
     return render_template('index.html')
 
+@app.route('/offline.html')
+def offline():
+    """Render the offline page for PWA"""
+    return render_template('offline.html')
+
 @app.route('/api/earthquakes')
 def get_earthquakes():
     """API endpoint to get earthquake data"""

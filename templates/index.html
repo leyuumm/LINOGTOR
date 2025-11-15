@@ -13,6 +13,37 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Lliam Khenzo P. Monleon">
     <meta name="copyright" content="Copyright © 2025 Lliam Khenzo P. Monleon. All Rights Reserved.">
+    <meta name="description" content="Real-time earthquake monitoring and alerts for Bogo City, Cebu, Philippines. LINOGTOR provides instant notifications for seismic activity.">
+    <meta name="keywords" content="earthquake, Bogo City, Cebu, Philippines, PHIVOLCS, USGS, seismic, alert, monitoring">
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#3b82f6">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="LINOGTOR">
+    
+    <!-- iOS PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="LINOGTOR">
+    <link rel="apple-touch-icon" href="/static/icon-apple-touch.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/static/icon-152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/icon-apple-touch.png">
+    <link rel="apple-touch-icon" sizes="167x167" href="/static/icon-167.png">
+    
+    <!-- Splash Screens for iOS -->
+    <link rel="apple-touch-startup-image" href="/static/splash-640x1136.png" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)">
+    <link rel="apple-touch-startup-image" href="/static/splash-750x1334.png" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)">
+    <link rel="apple-touch-startup-image" href="/static/splash-1242x2208.png" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3)">
+    <link rel="apple-touch-startup-image" href="/static/splash-1125x2436.png" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)">
+    <link rel="apple-touch-startup-image" href="/static/splash-1242x2688.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3)">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/static/manifest.json">
+    
+    <!-- Standard Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/icon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/icon-16.png">
+    
     <title>LINOGTOR - Bogo City, Cebu, Philippines</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -1321,6 +1352,83 @@
         if ('Notification' in window && Notification.permission === 'default') {
             Notification.requestPermission();
         }
+
+        // Register Service Worker for PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/static/service-worker.js')
+                    .then((registration) => {
+                        console.log('✅ Service Worker registered successfully:', registration.scope);
+                        
+                        // Check for updates every 60 seconds
+                        setInterval(() => {
+                            registration.update();
+                        }, 60000);
+                        
+                        // Listen for updates
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    console.log('🔄 New version available! Refresh to update.');
+                                    // Optionally show a notification to user
+                                    if (Notification.permission === 'granted') {
+                                        new Notification('LINOGTOR Update', {
+                                            body: 'A new version is available! Refresh to update.',
+                                            icon: '/static/icon-192.png',
+                                            badge: '/static/icon-192.png'
+                                        });
+                                    }
+                                }
+                            });
+                        });
+                    })
+                    .catch((error) => {
+                        console.error('❌ Service Worker registration failed:', error);
+                    });
+            });
+            
+            // Listen for messages from service worker
+            navigator.serviceWorker.addEventListener('message', (event) => {
+                if (event.data.type === 'SYNC_COMPLETE') {
+                    console.log('🔄 Background sync completed:', event.data.data);
+                }
+            });
+        }
+
+        // Install prompt for PWA
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            console.log('💾 PWA install prompt ready');
+            
+            // Show custom install button (you can add UI for this)
+            // For now, we'll just log it
+            console.log('📱 You can install LINOGTOR as an app!');
+        });
+
+        // Track PWA installation
+        window.addEventListener('appinstalled', () => {
+            console.log('✅ LINOGTOR installed as PWA!');
+            deferredPrompt = null;
+        });
+
+        // Handle online/offline status
+        window.addEventListener('online', () => {
+            console.log('🌐 Back online!');
+            // Refresh data immediately
+            updateEarthquakes();
+            updateStats();
+            updateBogoEarthquakes();
+            updateHazardHunterOnMap();
+            updatePHIVOLCSNews();
+        });
+
+        window.addEventListener('offline', () => {
+            console.log('📴 Offline mode - Using cached data');
+        });
+
 
         // Hide loading screen after page loads
         window.addEventListener('load', function() {
