@@ -1250,10 +1250,12 @@
                         }
                     }
 
-                    checkForNewEarthquakes(data.earthquakes);
+                    // ONLY check for alerts on Bogo City earthquakes (within 50km)
+                    const bogoEarthquakes = data.earthquakes.filter(eq => eq.distance_from_bogo_km <= 50);
+                    checkForNewEarthquakes(bogoEarthquakes);
                     
-                    // Update map with earthquake markers
-                    updateMap(data.earthquakes);
+                    // ONLY show Bogo City earthquakes on the map (within 50km)
+                    updateMap(bogoEarthquakes);
 
                     const listContainer = document.getElementById('earthquakeList');
                     
@@ -1339,14 +1341,14 @@
         updateHazardHunterOnMap();
         updatePHIVOLCSNews();
 
-        // Auto-refresh every 1 second
+        // Auto-refresh every 30 seconds (reduced from 1 second to prevent fake alerts)
         setInterval(() => {
             updateEarthquakes();
             updateStats();
             updateBogoEarthquakes();
             updateHazardHunterOnMap();
             updatePHIVOLCSNews();
-        }, 1000);
+        }, 30000); // 30 seconds instead of 1 second
     </script>
 </body>
 </html>
